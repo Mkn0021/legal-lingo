@@ -2,15 +2,15 @@ import Link from "next/link";
 
 export function Logo() {
 	return (
-		<Link title="Home" data-headlessui-state="" href="/">
+		<Link title="Home" className="pl-2 pr-0" href="/">
 			<LogoIcon />
 		</Link>
 	);
 }
 
 export const LogoIcon = (props: React.SVGProps<SVGSVGElement>) => (
-	<svg viewBox="0 0 156 34" width={164} height={34} {...props}>
+	<svg viewBox="0 0 156 34" width={156} height={34} {...props}>
 		<path d="M19.599 18.5a3 3 0 1 1-5.197-3 3 3 0 0 1 5.197 3m3.633-8.293a2 2 0 1 1-3.464-2 2 2 0 0 1 3.464 2m-3.464 15.586a2 2 0 1 1 3.464-2 2 2 0 0 1-3.464 2M26 19a2 2 0 1 1 0-4 2 2 0 0 1 0 4m-11.768 6.793a2 2 0 1 1-3.464-2 2 2 0 0 1 3.464 2m-3.464-15.586a2 2 0 1 1 3.464-2 2 2 0 0 1-3.464 2M8 19a2 2 0 1 1 0-4 2 2 0 0 1 0 4M25.866 3.645a1 1 0 1 1-1.732-1 1 1 0 0 1 1.732 1M33 18a1 1 0 1 1 0-2 1 1 0 0 1 0 2m-1.644-8.134a1 1 0 1 1-1-1.732 1 1 0 0 1 1 1.732m-1 16a1 1 0 1 1 1-1.732 1 1 0 0 1-1 1.732M16 33a1 1 0 1 1 2 0 1 1 0 0 1-2 0m8.134-1.644a1 1 0 1 1 1.733-1 1 1 0 0 1-1.733 1m-14.268 0a1 1 0 1 1-1.732-1 1 1 0 0 1 1.732 1M1 18a1 1 0 1 1 0-2 1 1 0 0 1 0 2m2.645 7.866a1 1 0 1 1-1-1.732 1 1 0 0 1 1 1.732m-1-16a1 1 0 1 1 1-1.732 1 1 0 0 1-1 1.732M16 1a1 1 0 1 1 2 0 1 1 0 0 1-2 0M8.134 3.645a1 1 0 1 1 1.732-1 1 1 0 0 1-1.732 1" />
-		<text x="40" y="22" fontSize="20">Legal Lingo</text>
+		<text x="42" y="22" fontSize="20">LegalLingo</text>
 	</svg>
 );

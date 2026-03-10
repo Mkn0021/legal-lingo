@@ -15,7 +15,7 @@ const features: Feature[] = [
 		pinLabel: "Translate",
 		title: "Get the full picture.",
 		description:
-			"We translate your document using Lingo.dev — preserving legal structure, tone, and clause formatting throughout.",
+			"We translate your document using Lingo.dev, preserving legal structure, tone, and clause formatting throughout.",
 		className: "lg:col-span-3 lg:rounded-tr-4xl",
 		children: <div className="h-full" />,
 	},
@@ -23,7 +23,7 @@ const features: Feature[] = [
 		pinLabel: "Detect",
 		title: "Flag the hidden traps.",
 		description:
-			"Legal concepts with no equivalent in your country are highlighted automatically — so nothing gets lost in translation.",
+			"Legal concepts with no equivalent in your country are highlighted automatically, so nothing gets lost in translation.",
 		className: "lg:col-span-2 lg:rounded-bl-4xl",
 		children: <div className="h-full" />,
 	},
@@ -78,7 +78,7 @@ const FeatureSkeleton = (feature: Feature) => (
 		<div className="flex min-h-80 flex-1 flex-col justify-stretch">
 			{feature.children}
 		</div>
-		<div className="relative p-10">
+		<div className="relative p-8 sm:p-10">
 			<h3 className="font-mono text-xs/5 font-semibold tracking-widest text-gray-500 uppercase data-dark:text-gray-400">
 				{feature.pinLabel}
 			</h3>
