@@ -17,7 +17,7 @@ export function HeroSection() {
 				</p>
 				<div className="mt-12 flex flex-col gap-x-6 gap-y-4 sm:flex-row">
 					<Button asChild>
-						<Link href="#">Try LegalLingo</Link>
+						<Link href="/scan">Try LegalLingo</Link>
 					</Button>
 					<Button variant="secondary" asChild>
 						<Link target="_blank" href="https://github.com/Mkn0021/legal-lingo">

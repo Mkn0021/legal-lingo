@@ -74,7 +74,7 @@ export function Footer() {
 					No lawyers needed. Upload any legal document and understand it in your language.
 				</p>
 				<Button className="mt-6 py-3 px-4">
-					<Link href="#">Analyze your document</Link>
+					<Link href="/scan">Analyze your document</Link>
 				</Button>
 			</div>
 			<div className="pb-16">
