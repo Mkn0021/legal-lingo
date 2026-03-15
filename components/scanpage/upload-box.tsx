@@ -11,7 +11,7 @@ const DEMO_FILES = [
 ];
 
 interface UploadBoxProps {
-    onStart: () => void;
+    onStart: (file: File) => void;
 }
 
 export function UploadBox({ onStart }: UploadBoxProps) {
@@ -37,10 +37,8 @@ export function UploadBox({ onStart }: UploadBoxProps) {
     };
 
     const handleFinalize = (files: File[]) => {
-        console.log("Processing files:", files);
-        // Add your processing logic here
-        onStart();
-    };
+        if (files[0]) onStart(files[0])
+    }
 
     return (
         <div className="flex justify-center items-center flex-col gap-8 max-w-screen px-4 md:mt-16">
