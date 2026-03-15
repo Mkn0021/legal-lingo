@@ -29,7 +29,7 @@ export function MultiStepLoader({ isReady, onDone }: { isReady: boolean; onDone:
     }, [current, isReady, onDone])
 
     return (
-        <div className="flex w-full h-full justify-center text-center items-center z-10 bg-[radial-gradient(ellipse_at_center,white_0%,transparent_75%)]">
+        <div className="flex w-full h-screen justify-center text-center items-center z-10 bg-[radial-gradient(ellipse_at_center,white_0%,transparent_75%)]">
             <div className="flex flex-col">
                 {STEPS.map((step, i) => {
                     const status = i < current ? "completed" : i === current ? "active" : "default"

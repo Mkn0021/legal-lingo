@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             text: doc.text,
             total: doc.total,
-            matches
+            pages: doc.pages,
+            matches,
         })
 
     } catch (err) {
