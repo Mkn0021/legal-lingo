@@ -1,27 +1,58 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useRef, useState } from "react";
-import { FileScanIcon } from "lucide-react";
+import { useRef, useState, forwardRef, useImperativeHandle } from "react";
+import { FileScanIcon, X, Loader2 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
+import { Button } from "./button";
 
-export const FileUpload = ({
+export const FileUpload = forwardRef(({
   onChange,
   title = "Upload file",
   description = "Drag or drop your files here or click to upload",
+  isLoading = false,
+  onFinalize,
 }: {
   onChange?: (files: File[]) => void;
   title?: string;
   description?: string;
-}) => {
+  isLoading?: boolean;
+  onFinalize?: (files: File[]) => void;
+}, ref) => {
   const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    loadFile: (file: File) => {
+      setUploading(true);
+      setTimeout(() => {
+        setFiles([file]);
+        onChange && onChange([file]);
+        setUploading(false);
+      }, 500);
+    },
+  }));
 
   const handleFileChange = (newFiles: File[]) => {
     const pdfFiles = newFiles.filter((file) => file.type === "application/pdf");
     if (pdfFiles.length > 0) {
-      setFiles((prevFiles) => [...prevFiles, ...pdfFiles]);
-      onChange && onChange(pdfFiles);
+      setUploading(true);
+      // Simulate upload delay for better UX
+      setTimeout(() => {
+        setFiles([pdfFiles[0]]);
+        onChange && onChange([pdfFiles[0]]);
+        setUploading(false);
+      }, 500);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setFiles([]);
+    onChange && onChange([]);
+    // Reset file input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -41,8 +72,8 @@ export const FileUpload = ({
   return (
     <div className="w-full" {...getRootProps()}>
       <div
-        onClick={handleClick}
-        className="group/file relative block w-full cursor-pointer overflow-hidden bg-white rounded-2xl shadow-xl ring-1 ring-black/10 p-2"
+        onClick={uploading || isLoading ? undefined : handleClick}
+        className={cn("group/file relative block w-full cursor-pointer overflow-hidden bg-white rounded-2xl shadow-xl ring-1 ring-black/10 p-2", (uploading || isLoading) && "opacity-60 cursor-not-allowed")}
       >
         <input
           ref={fileInputRef}
@@ -51,6 +82,7 @@ export const FileUpload = ({
           accept="application/pdf"
           onChange={(e) => handleFileChange(Array.from(e.target.files || []))}
           className="hidden"
+          disabled={uploading || isLoading}
         />
         <div className="flex flex-col items-center text-center text-balance justify-center rounded-[calc(var(--radius-2xl)-8px)] shadow-xs ring-1 ring-black/5 px-4 py-8 md:px-10 lg:py-12 lg:px-20">
           <p className="relative z-20 font-sans text-2xl md:text-3xl lg:text-4xl tracking-tight font-semibold text-neutral-700 dark:text-neutral-300">
@@ -73,11 +105,25 @@ export const FileUpload = ({
                     <p className="max-w-xs truncate text-base text-neutral-700 dark:text-neutral-300">
                       {file.name}
                     </p>
-                    <p
-                      className="shadow-input w-fit shrink-0 rounded-lg px-2 py-1 text-sm text-neutral-600 dark:bg-neutral-800 dark:text-white"
-                    >
-                      {(file.size / (1024 * 1024)).toFixed(2)} MB
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p
+                        className="shadow-input w-fit shrink-0 rounded-lg px-2 py-1 text-sm text-neutral-600 dark:bg-neutral-800 dark:text-white"
+                      >
+                        {file.size < 1024 * 1024
+                          ? `${(file.size / 1024).toFixed(2)} KB`
+                          : `${(file.size / (1024 * 1024)).toFixed(2)} MB`}
+                      </p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveFile();
+                        }}
+                        className="shrink-0 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-md transition-colors"
+                        title="Remove file"
+                      >
+                        <X className="size-4 text-red-500" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mt-2 flex w-full flex-col items-start justify-between text-sm text-neutral-600 md:flex-row md:items-center dark:text-neutral-400">
@@ -95,6 +141,18 @@ export const FileUpload = ({
                   </div>
                 </div>
               ))}
+            {files.length > 0 && (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onFinalize?.(files);
+                }}
+                className="relative z-40 mx-auto py-3 px-4 mt-6"
+                disabled={uploading || isLoading}
+              >
+                Process Document
+              </Button>
+            )}
             {!files.length && (
               <div
                 className={cn(
@@ -102,7 +160,12 @@ export const FileUpload = ({
                   "shadow-[0px_10px_50px_rgba(0,0,0,0.1)] translate-x-5 -translate-y-5 translate-z-5 border border-neutral-100",
                 )}
               >
-                {isDragActive ? (
+                {uploading || isLoading ? (
+                  <div className="flex flex-col items-center text-neutral-600">
+                    <Loader2 className="size-16 text-neutral-500 dark:text-neutral-700 animate-spin" />
+                    <p className="mt-2 text-sm text-neutral-500">Processing...</p>
+                  </div>
+                ) : isDragActive ? (
                   <p className="flex flex-col items-center text-neutral-600">
                     Drop it
                     <FileScanIcon className="size-16 text-neutral-500 dark:text-neutral-700" />
@@ -125,7 +188,9 @@ export const FileUpload = ({
       </div>
     </div>
   );
-};
+});
+
+FileUpload.displayName = "FileUpload";
 
 export function GridPattern({ className }: { className?: string }) {
   const columns = 48;

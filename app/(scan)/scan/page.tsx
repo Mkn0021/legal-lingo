@@ -1,15 +1,23 @@
+"use client";
+
+import { useState } from "react";
+import { Logo } from "@/components/homepage/logo";
+import { GridPattern } from "@/components/ui/file-upload";
 import { UploadBox } from "@/components/scanpage/upload-box";
 import { TopGradient } from "@/components/homepage/gradient-background";
-import { GridPattern } from "@/components/ui/file-upload";
-import { Logo } from "@/components/homepage/logo";
+import { MultiStepLoader } from "@/components/scanpage/multi-step-loader";
+
+type Stage = "upload" | "processing" | "result";
 
 export default function Page() {
+    const [stage, setStage] = useState<Stage>("upload");
     return (
         <PageContainer>
             <nav className="absolute top-0 left-4 z-50">
                 <Logo />
             </nav>
-            <UploadBox />
+            {stage === "upload" && <UploadBox onStart={() => setStage("processing")} />}
+            {stage === "processing" && <MultiStepLoader onDone={() => setStage("result")} />}
         </PageContainer >
     )
 }
