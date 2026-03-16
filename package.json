@@ -12,6 +12,7 @@
     "@libsql/client": "^0.17.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "lingo.dev": "^0.133.2",
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
     "pdfjs-dist": "5.4.296",
