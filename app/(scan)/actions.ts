@@ -1,4 +1,12 @@
 import { db } from "@/lib/db"
+import {
+    LegalTerm,
+    BoundingBox,
+    MatchedTerm,
+    PageMeta,
+    ParsedDocumentWithWords,
+    WordToken,
+} from "@/lib/types"
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs"
 
 // @ts-ignore
@@ -6,66 +14,6 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     "pdfjs-dist/legacy/build/pdf.worker.mjs",
     import.meta.url
 ).toString()
-
-export interface LegalTerm {
-    id: number
-    english_term: string
-    english_clean: string
-    category: string
-    explanation_en: string
-    source_url: string
-    source_name: string
-    translation_es: string
-    translation_de: string
-    flag_es: string
-    flag_de: string
-    flag_reason_es: string
-    flag_reason_de: string
-    word_count: number
-    aliases: string
-}
-
-export interface BoundingBox {
-    page: number
-    x: number
-    y: number
-    width: number
-    height: number
-}
-
-export interface MatchedTerm extends LegalTerm {
-    matchedPhrase: string
-    positions: number[]
-    pages: number[]
-    boundingBoxes: BoundingBox[]
-}
-
-export interface PageMeta {
-    num: number
-    text: string
-    width: number
-    height: number
-}
-
-export interface ParsedDocument {
-    text: string
-    pages: PageMeta[]
-    total: number
-}
-
-interface WordToken {
-    text: string
-    page: number
-    x: number
-    y: number
-    width: number
-    height: number
-    charOffset: number
-}
-
-export interface ParsedDocumentWithWords extends ParsedDocument {
-    words: WordToken[]
-}
 
 export async function extractText(buffer: Buffer): Promise<ParsedDocumentWithWords> {
     const uint8 = new Uint8Array(buffer)
