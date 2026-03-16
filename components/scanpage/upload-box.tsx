@@ -26,10 +26,7 @@ export function UploadBox({ onStart }: UploadBoxProps) {
             const blob = await response.blob();
             const file = new File([blob], fileName, { type: "application/pdf" });
             fileUploadRef.current?.loadFile(file);
-            // Keep loading state visible for the full animation duration
-            setTimeout(() => {
-                setIsLoading(false);
-            }, 500);
+            setIsLoading(false);
         } catch (error) {
             console.error("Error loading demo file:", error);
             setIsLoading(false);

@@ -1,38 +1,98 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
+import { useEffect, useState } from "react"
 import { CheckIcon, Loader2 } from "lucide-react"
 
 const STEPS = [
-    "Extracting PDF text",
     "Loading legal terms",
     "Matching terms",
-    "Generating results",
+    "Translating document",
+    "Finalizing results",
 ]
 
-export function MultiStepLoader({ isReady, onDone }: { isReady: boolean; onDone: () => void }) {
+interface MultiStepLoaderProps {
+    file: File
+    onDone: (data: unknown) => void
+    onError: (message: string) => void
+}
+
+export function MultiStepLoader({ file, onDone, onError }: MultiStepLoaderProps) {
     const [current, setCurrent] = useState(0)
 
     useEffect(() => {
-        // All steps completed and data ready
-        if (current > STEPS.length && isReady) {
-            onDone()
-            return
+        const formData = new FormData()
+        formData.append("file", file)
+
+        let isCancelled = false
+
+        async function run() {
+            try {
+                const res = await fetch("/api/process", {
+                    method: "POST",
+                    body: formData,
+                })
+
+                if (!res.ok || !res.body) {
+                    onError("Failed to connect to scan API")
+                    return
+                }
+
+                const reader = res.body.getReader()
+                const decoder = new TextDecoder()
+                let buffer = ""
+
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done || isCancelled) break
+
+                    buffer += decoder.decode(value, { stream: true })
+                    const lines = buffer.split("\n\n")
+                    buffer = lines.pop() ?? ""
+
+                    for (const line of lines) {
+                        if (!line.startsWith("data: ")) continue
+                        try {
+                            const { event, data } = JSON.parse(line.slice(6))
+
+                            if (event === "step") {
+                                setCurrent(data.step)
+                            }
+
+                            if (event === "done") {
+                                setCurrent(STEPS.length)
+                                if (!isCancelled) onDone(data)
+                            }
+
+                            if (event === "error") {
+                                onError(data.message)
+                            }
+                        } catch {
+                            // malformed chunk — skip
+                        }
+                    }
+                }
+            } catch (err) {
+                if (!isCancelled) {
+                    onError(err instanceof Error ? err.message : "Something went wrong")
+                }
+            }
         }
 
-        // Advance through steps
-        if (current <= STEPS.length) {
-            const timer = setTimeout(() => setCurrent(c => c + 1), 300)
-            return () => clearTimeout(timer)
-        }
-    }, [current, isReady, onDone])
+        run()
+
+        return () => { isCancelled = true }
+    }, [file])
 
     return (
         <div className="flex w-full h-screen justify-center text-center items-center z-10 bg-[radial-gradient(ellipse_at_center,white_0%,transparent_75%)]">
             <div className="flex flex-col">
                 {STEPS.map((step, i) => {
-                    const status = i < current ? "completed" : i === current ? "active" : "default"
+                    const status =
+                        i < current ? "completed"
+                            : i === current ? "active"
+                                : "default"
+
                     return (
                         <div key={i} className="flex gap-3">
                             <div className="flex flex-col items-center">
@@ -49,7 +109,7 @@ export function MultiStepLoader({ isReady, onDone }: { isReady: boolean; onDone:
                                         : <CheckIcon className="size-4" />}
                                 </div>
                                 {i < STEPS.length - 1 && (
-                                    <div className={cn("w-0.5 flex-1", {
+                                    <div className={cn("w-0.5 flex-1 min-h-6", {
                                         "bg-neutral-700": status === "completed",
                                         "bg-neutral-200": status !== "completed",
                                     })} />
@@ -58,6 +118,8 @@ export function MultiStepLoader({ isReady, onDone }: { isReady: boolean; onDone:
                             <div className="pb-6 flex items-center">
                                 <span className={cn("text-base", {
                                     "text-neutral-400": status === "default",
+                                    "text-neutral-900 font-medium": status === "active",
+                                    "text-neutral-500": status === "completed",
                                 })}>
                                     {step}
                                 </span>

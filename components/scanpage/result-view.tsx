@@ -15,7 +15,7 @@ import {
     Languages,
     MessageCircle,
 } from "lucide-react"
-import { BoundingBox, MatchedTerm, ResultViewProps, ScanResult } from "@/lib/types"
+import { BoundingBox, MatchedTerm, ParagraphMap, ResultViewProps, ScanResult } from "@/lib/types"
 import { RISK, RiskLevel } from "@/lib/constant"
 import { Button } from "../ui/button"
 import { cn } from "@/lib/utils"
@@ -47,7 +47,6 @@ function TopBar({
     setLanguage: (lang: "es" | "de") => void
     viewMode: "original" | "translated"
     setViewMode: (mode: "original" | "translated") => void
-
 }) {
     return (
         <div className="flex items-center justify-between border-b border-black/5 shrink-0 p-4">
@@ -167,6 +166,87 @@ function HighlightOverlay({
     )
 }
 
+function TranslatedView({
+    paragraphMap,
+    matches,
+    lang,
+    activeTermId,
+    onTermClick,
+}: {
+    paragraphMap: ParagraphMap[]
+    matches: MatchedTerm[]
+    lang: "es" | "de"
+    activeTermId: number | null
+    onTermClick: (term: MatchedTerm) => void
+}) {
+    const paragraphTerms = useMemo(() => {
+        const map = new Map<number, MatchedTerm[]>()
+
+        for (const term of matches) {
+            for (let i = 0; i < paragraphMap.length; i++) {
+                const para = paragraphMap[i]
+                if (para.original.toLowerCase().includes(
+                    term.matchedPhrase.toLowerCase()
+                )) {
+                    const existing = map.get(i) ?? []
+                    map.set(i, [...existing, term])
+                }
+            }
+        }
+
+        return map
+    }, [matches, paragraphMap])
+
+    return (
+        <div className="p-8 font-serif text-sm leading-7 text-gray-800">
+            {paragraphMap.map((para, i) => {
+                const terms = paragraphTerms.get(i) ?? []
+                const translatedPara = lang === "es"
+                    ? para.translated_es
+                    : para.translated_de
+
+                if (terms.length === 0) {
+                    return (
+                        <p key={i} className="mb-4">
+                            {translatedPara}
+                        </p>
+                    )
+                }
+
+                const highestRiskTerm = terms.reduce((prev, curr) => {
+                    const prevFlag = lang === "es" ? prev.flag_es : prev.flag_de
+                    const currFlag = lang === "es" ? curr.flag_es : curr.flag_de
+                    if (currFlag === "RED") return curr
+                    if (currFlag === "AMBER" && prevFlag !== "RED") return curr
+                    return prev
+                })
+
+                const risk = getRisk(highestRiskTerm, lang)
+                const r = RISK[risk]
+                const isActive = terms.some(t => t.id === activeTermId)
+
+                return (
+                    <p
+                        key={i}
+                        className="mb-4 rounded px-2 py-1 cursor-pointer transition-all duration-150 -mx-2"
+                        style={{
+                            backgroundColor: isActive
+                                ? r.highlightActive
+                                : r.highlight,
+                            borderLeft: `3px solid ${isActive
+                                ? r.highlightActive.replace("0.5", "0.9")
+                                : r.highlight.replace("0.25", "0.7")}`,
+                        }}
+                        onClick={() => onTermClick(highestRiskTerm)}
+                    >
+                        {translatedPara}
+                    </p>
+                )
+            })}
+        </div>
+    )
+}
+
 function TermCard({
     term,
     lang,
@@ -185,6 +265,7 @@ function TermCard({
     const risk = getRisk(term, lang)
     const r = RISK[risk]
     const flagReason = lang === "es" ? term.flag_reason_es : term.flag_reason_de
+    const translation = lang === "es" ? term.translation_es : term.translation_de
 
     return (
         <div
@@ -196,11 +277,18 @@ function TermCard({
                 ${isActive ? r.cardActive : r.card + " hover:shadow-sm"}
             `}
         >
-            <div className="flex items-start justify-between mb-3">
-                <p className="font-medium text-lg text-gray-950 truncate">
-                    {term.matchedPhrase}
-                </p>
-                <Button variant="outline" size="xs" className="shadow-none">
+            <div className="flex items-start justify-between mb-2">
+                <div className="flex flex-col gap-0.5 min-w-0">
+                    <p className="font-medium text-base text-gray-950 truncate">
+                        {term.matchedPhrase}
+                    </p>
+                    {translation && (
+                        <p className="text-xs text-gray-400 truncate italic">
+                            {translation}
+                        </p>
+                    )}
+                </div>
+                <Button variant="outline" size="xs" className="shadow-none shrink-0 ml-2">
                     {r.label}
                 </Button>
             </div>
@@ -281,8 +369,8 @@ function RightPanel({
                         <div className="flex items-center text-gray-700 gap-2">
                             <LinkIcon size={24} /> <span>Extracted Terms</span>
                         </div>
-                        <Button className="p-2">
-                            <MessageCircle size={20} onClick={() => setRightView('chat')} />
+                        <Button className="p-2" onClick={() => setRightView('chat')}>
+                            <MessageCircle size={20} />
                         </Button>
                     </div>
                     <div className="flex-1 overflow-y-auto overscroll-contain p-4 flex flex-col gap-4 min-h-0">
@@ -408,7 +496,15 @@ export function ResultView({ data, file }: ResultViewProps) {
                         className="relative shadow-xl rounded-sm bg-white w-[calc(100%-48px)] max-w-3xl"
                         style={{ width: "calc(100% - 48px)", maxWidth: "800px" }}
                     >
-                        {fileUrl ? (
+                        {viewMode === "translated" ? (
+                            <TranslatedView
+                                matches={matches}
+                                lang={lang}
+                                activeTermId={activeTermId}
+                                onTermClick={handleHighlightClick}
+                                paragraphMap={result.paragraphMap}
+                            />
+                        ) : fileUrl ? (
                             <>
                                 <Document
                                     file={fileUrl}
@@ -443,12 +539,14 @@ export function ResultView({ data, file }: ResultViewProps) {
                             </div>
                         )}
                     </div>
-                    <PageNav
-                        currentPage={currentPage}
-                        numPages={numPages}
-                        onPrev={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        onNext={() => setCurrentPage(p => Math.min(numPages, p + 1))}
-                    />
+                    {viewMode === "original" && (
+                        <PageNav
+                            currentPage={currentPage}
+                            numPages={numPages}
+                            onPrev={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            onNext={() => setCurrentPage(p => Math.min(numPages, p + 1))}
+                        />
+                    )}
                 </div>
 
                 <RightPanel

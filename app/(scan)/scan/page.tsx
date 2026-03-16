@@ -18,24 +18,20 @@ export default function Page() {
     const [file, setFile] = useState<File | null>(null)
     const [error, setError] = useState<string | null>(null)
 
-    const handleStart = async (file: File) => {
-        setStage("processing")
-        setFile(file)
+    const handleStart = (uploadedFile: File) => {
+        setFile(uploadedFile)
         setError(null)
+        setStage("processing")
+    }
 
-        const formData = new FormData()
-        formData.append("file", file)
-        formData.append("flag", "flag_es")
+    const handleDone = (result: unknown) => {
+        setData(result)
+        setStage("result")
+    }
 
-        try {
-            const res = await fetch("/api/process", { method: "POST", body: formData })
-            const json = await res.json()
-            if (!res.ok) throw new Error(json.error ?? "Something went wrong")
-            setData(json)
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Something went wrong")
-            setStage("upload")
-        }
+    const handleError = (message: string) => {
+        setError(message)
+        setStage("upload")
     }
 
     return (
@@ -55,15 +51,17 @@ export default function Page() {
                 </div>
             )}
 
-            {stage === "processing" &&
+            {stage === "processing" && file && (
                 <MultiStepLoader
-                    isReady={data !== null}
-                    onDone={() => setStage("result")}
-                />}
+                    file={file}
+                    onDone={handleDone}
+                    onError={handleError}
+                />
+            )}
 
-            {stage === "result" &&
+            {stage === "result" && (
                 <ResultView data={data} file={file} />
-            }
+            )}
         </PageContainer>
     )
 }

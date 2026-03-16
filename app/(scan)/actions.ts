@@ -15,6 +15,8 @@ export interface LegalTerm {
     explanation_en: string
     source_url: string
     source_name: string
+    translation_es: string
+    translation_de: string
     flag_es: string
     flag_de: string
     flag_reason_es: string
@@ -145,7 +147,11 @@ export async function extractText(buffer: Buffer): Promise<ParsedDocumentWithWor
 
 export async function loadTerms(): Promise<LegalTerm[]> {
     const result = await db.execute({
-        sql: "SELECT * FROM legal_terms ORDER BY word_count DESC",
+        sql: `SELECT * FROM legal_terms 
+              WHERE word_count > 1 
+                 OR flag_es IN ('RED', 'AMBER') 
+                 OR flag_de IN ('RED', 'AMBER')
+              ORDER BY word_count DESC`,
         args: [],
     })
 
@@ -157,6 +163,8 @@ export async function loadTerms(): Promise<LegalTerm[]> {
         explanation_en: row.explanation_en as string,
         source_url: row.source_url as string,
         source_name: row.source_name as string,
+        translation_es: row.translation_es as string,
+        translation_de: row.translation_de as string,
         flag_es: row.flag_es as string,
         flag_de: row.flag_de as string,
         flag_reason_es: row.flag_reason_es as string,
