@@ -349,6 +349,9 @@ function RightPanel({
     chatPrefill,
     onCloseChat,
     onAskInChat,
+    result,
+    chatMessages,
+    setChatMessages,
 }: {
     matches: MatchedTerm[]
     lang: "es" | "de"
@@ -360,6 +363,9 @@ function RightPanel({
     chatPrefill: string | null
     onCloseChat: () => void
     onAskInChat: (message: string) => void
+    result: ScanResult
+    chatMessages: Array<{ role: "user" | "assistant"; content: string; isStreaming?: boolean }>
+    setChatMessages: (messages: Array<{ role: "user" | "assistant"; content: string; isStreaming?: boolean }> | ((prev: Array<{ role: "user" | "assistant"; content: string; isStreaming?: boolean }>) => Array<{ role: "user" | "assistant"; content: string; isStreaming?: boolean }>)) => void
 }) {
     return (
         <div className="w-90 h-full shrink-0 flex flex-col overflow-hidden border-l border-black/8 bg-gray-50">
@@ -393,6 +399,10 @@ function RightPanel({
                 <ChatHandler
                     onClose={onCloseChat}
                     prefill={chatPrefill}
+                    documentContext={result}
+                    language={lang}
+                    messages={chatMessages}
+                    setMessages={setChatMessages}
                 />
             )}
         </div>
@@ -408,6 +418,7 @@ export function ResultView({ data, file }: ResultViewProps) {
     const [currentPage, setCurrentPage] = useState(1)
     const [pageWidth, setPageWidth] = useState<number>(0)
     const [numPages, setNumPages] = useState(0)
+    const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "assistant"; content: string; isStreaming?: boolean }>>([])
     const containerRef = useRef<HTMLDivElement>(null)
     const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
 
@@ -443,6 +454,7 @@ export function ResultView({ data, file }: ResultViewProps) {
     function handleHighlightClick(term: MatchedTerm) {
         const next = activeTermId === term.id ? null : term.id
         setActiveTermId(next)
+        setRightView('terms')
         if (next !== null) {
             setTimeout(() => {
                 cardRefs.current[term.id]?.scrollIntoView({ behavior: "smooth", block: "nearest" })
@@ -560,6 +572,9 @@ export function ResultView({ data, file }: ResultViewProps) {
                     chatPrefill={chatPrefill}
                     onCloseChat={() => setRightView('terms')}
                     onAskInChat={handleAskInChat}
+                    result={result}
+                    chatMessages={chatMessages}
+                    setChatMessages={setChatMessages}
                 />
             </div>
         </SectionBox>

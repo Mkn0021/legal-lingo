@@ -2,7 +2,7 @@
 
 import { X, Send } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
-
+import { ScanResult } from "@/lib/types"
 import { Chat } from "../chat/chat"
 import { ChatMessages } from "../chat/chat-messages"
 import { ChatHeader, ChatHeaderAddon, ChatHeaderButton, ChatHeaderMain } from "../chat/chat-header"
@@ -17,31 +17,109 @@ interface Message {
 interface ChatHandlerProps {
     onClose: () => void
     prefill?: string | null
+    documentContext: ScanResult
+    language: "es" | "de"
+    messages: Message[]
+    setMessages: (messages: Message[] | ((prev: Message[]) => Message[])) => void
 }
 
-export function ChatHandler({ onClose, prefill }: ChatHandlerProps) {
-    const [messages, setMessages] = useState<Message[]>([])
+export function ChatHandler({ onClose, prefill, documentContext, language, messages, setMessages }: ChatHandlerProps) {
     const [input, setInput] = useState("")
-    const prefillSentRef = useRef<string | null>(null)
+    const [isLoading, setIsLoading] = useState(false)
+    const messagesEndRef = useRef<HTMLDivElement>(null)
 
-    function handleSend(message: string) {
-        if (!message.trim()) return
-        setMessages(prev => [...prev, { role: "user", content: message }])
+    async function handleSend(message: string) {
+        if (!message.trim() || isLoading) return
+
+        const userMessage: Message = { role: "user", content: message }
+        const updatedMessages = [...messages, userMessage]
+
+        setMessages(updatedMessages)
         setInput("")
-        setTimeout(() => {
-            setMessages(prev => [...prev, {
-                role: "assistant",
-                content: "Mock response — Chat API coming in Phase 2."
-            }])
-        }, 800)
+        setIsLoading(true)
+
+        setMessages(prev => [...prev, {
+            role: "assistant",
+            content: "",
+            isStreaming: true,
+        }])
+
+        try {
+            const res = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    messages: updatedMessages.map(m => ({
+                        role: m.role,
+                        content: m.content,
+                    })),
+                    documentContext,
+                    language,
+                }),
+            })
+
+            if (!res.ok || !res.body) throw new Error("Failed to connect")
+
+            const reader = res.body.getReader()
+            const decoder = new TextDecoder()
+            let accumulated = ""
+
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+
+                accumulated += decoder.decode(value, { stream: true })
+
+                setMessages(prev => {
+                    const updated = [...prev]
+                    updated[updated.length - 1] = {
+                        role: "assistant",
+                        content: accumulated,
+                        isStreaming: true,
+                    }
+                    return updated
+                })
+            }
+
+            // Mark streaming done
+            setMessages(prev => {
+                const updated = [...prev]
+                updated[updated.length - 1] = {
+                    role: "assistant",
+                    content: accumulated,
+                    isStreaming: false,
+                }
+                return updated
+            })
+
+        } catch (err) {
+            setMessages(prev => {
+                const updated = [...prev]
+                updated[updated.length - 1] = {
+                    role: "assistant",
+                    content: "Something went wrong. Please try again.",
+                    isStreaming: false,
+                }
+                return updated
+            })
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     useEffect(() => {
-        if (prefill && prefillSentRef.current !== prefill) {
-            handleSend(prefill)
-            prefillSentRef.current = prefill
+        if (prefill && prefill.trim()) {
+            // Check if this exact message already exists in the chat
+            const messageExists = messages.some(msg => msg.content === prefill && msg.role === "user")
+            if (!messageExists) {
+                handleSend(prefill)
+            }
         }
-    }, [prefill])
+    }, [prefill, messages])
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }, [messages])
 
     return (
         <Chat>
@@ -83,6 +161,7 @@ export function ChatHandler({ onClose, prefill }: ChatHandlerProps) {
                                 </div>
                             </div>
                         ))}
+                        <div ref={messagesEndRef} />
                     </div>
                 )}
             </ChatMessages>
@@ -91,11 +170,21 @@ export function ChatHandler({ onClose, prefill }: ChatHandlerProps) {
                 <ChatToolbarTextarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault()
+                            handleSend(input)
+                        }
+                    }}
                     onSubmit={() => handleSend(input)}
                     placeholder="Ask about your document..."
                 />
                 <ChatToolbarAddon align="inline-end">
-                    <ChatToolbarButton disabled={!input.trim()} size="icon">
+                    <ChatToolbarButton
+                        disabled={!input.trim() || isLoading}
+                        size="icon"
+                        onClick={() => handleSend(input)}
+                    >
                         <Send size={16} />
                     </ChatToolbarButton>
                 </ChatToolbarAddon>
