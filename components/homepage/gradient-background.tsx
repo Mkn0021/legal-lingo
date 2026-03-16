@@ -10,5 +10,5 @@ export const GradientBackground = ({ className }: { className?: string }) => (
 );
 
 export const TopGradient = () => (
-    <div className="absolute -top-44 -right-60 h-60 w-xl rotate-[-10deg] transform-gpu rounded-full bg-linear-115 from-[#fff1be] from-28% via-[#ee87cb] via-70% to-[#b060ff] blur-3xl md:right-0" />
+    <div className="absolute -top-44 -right-60 h-60 w-xl rotate-[-10deg] transform-gpu rounded-full bg-linear-115 from-[#fff1be] from-28% via-[#ee87cb] via-70% to-[#b060ff] blur-3xl pointer-events-none md:right-0" />
 );

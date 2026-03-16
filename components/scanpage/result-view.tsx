@@ -16,6 +16,7 @@ import { BoundingBox, MatchedTerm, ResultViewProps, ScanResult } from "@/lib/typ
 import { RISK, RiskLevel } from "@/lib/constant"
 import { Button } from "../ui/button"
 import { cn } from "@/lib/utils"
+import { SectionBox } from "../homepage/section"
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
 
@@ -291,8 +292,7 @@ export function ResultView({ data, file }: ResultViewProps) {
     const fileUrl = file ? URL.createObjectURL(file) : null
 
     return (
-        <div className="relative flex flex-col w-full h-[calc(100vh-64px)] bg-white rounded-2xl shadow-xl ring-1 ring-black/10 p-2 min-h-0 z-10 mt-16">
-            <div className="absolute -inset-2 rounded-[calc(var(--radius-lg)+8px)] shadow-xs ring-1 ring-black/5 pointer-events-none" />
+        <SectionBox className="flex flex-col h-[calc(100vh-64px)] p-2">
             <TopBar redCount={redCount} amberCount={amberCount} />
 
             <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -356,6 +356,6 @@ export function ResultView({ data, file }: ResultViewProps) {
                     onCardClick={handleCardClick}
                 />
             </div>
-        </div>
+        </SectionBox>
     )
 }

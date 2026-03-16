@@ -37,3 +37,10 @@ export const SectionContent = ({ children, className }: BaseProps) => (
 		{children}
 	</div>
 );
+
+export const SectionBox = ({ className, children, ...props }: BaseProps & React.HTMLAttributes<HTMLDivElement>) => (
+	<SectionContent className={cn("relative w-full bg-white rounded-2xl shadow-xl ring-1 ring-black/10 min-h-0 z-10", className)} {...props}>
+		<div className="absolute -inset-2 rounded-[calc(var(--radius-lg)+8px)] shadow-xs ring-1 ring-black/5 pointer-events-none" />
+		{children}
+	</SectionContent>
+)

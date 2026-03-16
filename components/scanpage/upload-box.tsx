@@ -41,7 +41,7 @@ export function UploadBox({ onStart }: UploadBoxProps) {
     }
 
     return (
-        <div className="flex justify-center items-center flex-col gap-8 max-w-screen px-4 md:mt-16">
+        <div className="flex justify-center items-center flex-col gap-8 max-w-screen px-4">
             <FileUpload
                 ref={fileUploadRef}
                 title="Upload your legal document"

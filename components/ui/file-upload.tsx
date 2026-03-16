@@ -5,6 +5,7 @@ import { useRef, useState, forwardRef, useImperativeHandle } from "react";
 import { FileScanIcon, X, Loader2 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "./button";
+import { SectionBox } from "../homepage/section";
 
 export const FileUpload = forwardRef(({
   onChange,
@@ -38,19 +39,16 @@ export const FileUpload = forwardRef(({
     const pdfFiles = newFiles.filter((file) => file.type === "application/pdf");
     if (pdfFiles.length > 0) {
       setUploading(true);
-      // Simulate upload delay for better UX
-      setTimeout(() => {
-        setFiles([pdfFiles[0]]);
-        onChange && onChange([pdfFiles[0]]);
-        setUploading(false);
-      }, 500);
+      setFiles([pdfFiles[0]]);
+      onChange && onChange([pdfFiles[0]]);
+      setUploading(false);
     }
   };
 
   const handleRemoveFile = () => {
     setFiles([]);
     onChange && onChange([]);
-    // Reset file input so the same file can be selected again
+    
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -71,9 +69,9 @@ export const FileUpload = forwardRef(({
 
   return (
     <div className="w-full" {...getRootProps()}>
-      <div
+      <SectionBox
         onClick={uploading || isLoading ? undefined : handleClick}
-        className={cn("group/file relative block w-full cursor-pointer overflow-hidden bg-white rounded-2xl shadow-xl ring-1 ring-black/10 p-2", (uploading || isLoading) && "opacity-60 cursor-not-allowed")}
+        className={cn("group/file block cursor-pointer", (uploading || isLoading) && "opacity-60 cursor-not-allowed")}
       >
         <input
           ref={fileInputRef}
@@ -84,7 +82,7 @@ export const FileUpload = forwardRef(({
           className="hidden"
           disabled={uploading || isLoading}
         />
-        <div className="flex flex-col items-center text-center text-balance justify-center rounded-[calc(var(--radius-2xl)-8px)] shadow-xs ring-1 ring-black/5 px-4 py-8 md:px-10 lg:py-12 lg:px-20">
+        <div className="flex flex-col items-center text-center text-balance justify-center px-4 py-8 md:px-10 lg:py-12 lg:px-20">
           <p className="relative z-20 font-sans text-2xl md:text-3xl lg:text-4xl tracking-tight font-semibold text-neutral-700 dark:text-neutral-300">
             {title}
           </p>
@@ -185,7 +183,7 @@ export const FileUpload = forwardRef(({
             )}
           </div>
         </div>
-      </div>
+      </SectionBox>
     </div>
   );
 });
