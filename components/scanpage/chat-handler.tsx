@@ -45,15 +45,15 @@ export function ChatHandler({ onClose, prefill }: ChatHandlerProps) {
 
     return (
         <Chat>
-            <ChatHeader className="border-b border-black/8">
+            <ChatHeader className="border-b border-black/8 px-4 py-5">
                 <ChatHeaderMain>
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-gray-700">
                         Ask your document
                     </span>
                 </ChatHeaderMain>
                 <ChatHeaderAddon>
                     <ChatHeaderButton onClick={onClose}>
-                        <X size={14} />
+                        <X size={16} />
                     </ChatHeaderButton>
                 </ChatHeaderAddon>
             </ChatHeader>

@@ -257,6 +257,7 @@ function RightPanel({
     cardRefs,
     onCardClick,
     rightView,
+    setRightView,
     chatPrefill,
     onCloseChat,
     onAskInChat,
@@ -267,6 +268,7 @@ function RightPanel({
     cardRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>
     onCardClick: (term: MatchedTerm) => void
     rightView: 'terms' | 'chat'
+    setRightView: (view: 'terms' | 'chat') => void
     chatPrefill: string | null
     onCloseChat: () => void
     onAskInChat: (message: string) => void
@@ -275,8 +277,13 @@ function RightPanel({
         <div className="w-90 h-full shrink-0 flex flex-col overflow-hidden border-l border-black/8 bg-gray-50">
             {rightView === "terms" && (
                 <>
-                    <div className="p-4 bg-white border-b border-black/8 shrink-0 flex items-center text-gray-700 gap-2">
-                        <LinkIcon size={24} /> <span>Extracted Terms</span>
+                    <div className="p-4 bg-white border-b border-black/8 shrink-0 flex items-center justify-between">
+                        <div className="flex items-center text-gray-700 gap-2">
+                            <LinkIcon size={24} /> <span>Extracted Terms</span>
+                        </div>
+                        <Button className="p-2">
+                            <MessageCircle size={20} onClick={() => setRightView('chat')} />
+                        </Button>
                     </div>
                     <div className="flex-1 overflow-y-auto overscroll-contain p-4 flex flex-col gap-4 min-h-0">
                         {matches.map(term => (
@@ -451,6 +458,7 @@ export function ResultView({ data, file }: ResultViewProps) {
                     cardRefs={cardRefs}
                     onCardClick={handleCardClick}
                     rightView={rightView}
+                    setRightView={setRightView}
                     chatPrefill={chatPrefill}
                     onCloseChat={() => setRightView('terms')}
                     onAskInChat={handleAskInChat}
