@@ -42,14 +42,11 @@ export interface WordToken {
     charOffset: number
 }
 
-export interface ParsedDocument {
+export interface ExtractedPdfData {
     text: string
-    pages: PageMeta[]
-    total: number
-}
-
-export interface ParsedDocumentWithWords extends ParsedDocument {
+    pages: Array<{ num: number; text: string; width: number; height: number }>
     words: WordToken[]
+    total: number
 }
 
 export interface MatchedTerm extends LegalTerm {

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 import { CheckIcon, Loader2 } from "lucide-react"
 
 const STEPS = [
+    "Extracting text from PDF",
     "Loading legal terms",
     "Matching terms",
     "Translating document",
@@ -21,16 +22,29 @@ export function MultiStepLoader({ file, onDone, onError }: MultiStepLoaderProps)
     const [current, setCurrent] = useState(0)
 
     useEffect(() => {
-        const formData = new FormData()
-        formData.append("file", file)
-
         let isCancelled = false
 
         async function run() {
             try {
+                // Dynamically import PDF extraction (only runs in browser)
+                const { extractPdfText } = await import("@/lib/client/pdf-extract")
+
+                // Step 0: Extract PDF text on client
+                setCurrent(0)
+                const extractedData = await extractPdfText(file)
+
+                if (isCancelled) return
+
+                // Send to API
                 const res = await fetch("/api/process", {
                     method: "POST",
-                    body: formData,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        extractedText: extractedData.text,
+                        pages: extractedData.pages,
+                        words: extractedData.words,
+                        total: extractedData.total,
+                    }),
                 })
 
                 if (!res.ok || !res.body) {
@@ -56,7 +70,8 @@ export function MultiStepLoader({ file, onDone, onError }: MultiStepLoaderProps)
                             const { event, data } = JSON.parse(line.slice(6))
 
                             if (event === "step") {
-                                setCurrent(data.step)
+                                // Offset by 1 since we already did extraction
+                                setCurrent(data.step + 1)
                             }
 
                             if (event === "done") {

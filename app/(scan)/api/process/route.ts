@@ -1,16 +1,18 @@
 import { NextRequest } from "next/server"
 import { LingoDotDevEngine } from "lingo.dev/sdk"
-import { extractText, loadTerms, matchTerms } from "@/app/(scan)/actions"
+import { loadTerms, matchTerms } from "@/app/(scan)/actions"
+import { PageMeta, WordToken } from "@/lib/types"
 
 const lingo = new LingoDotDevEngine({
     apiKey: process.env.LINGODOTDEV_API_KEY!,
 })
 
 export async function POST(req: NextRequest) {
-    const formData = await req.formData()
-    const file = formData.get("file") as File
-    if (!file) {
-        return new Response(JSON.stringify({ error: "No file provided" }), { status: 400 })
+    const body = await req.json()
+    const { extractedText, pages, words, total } = body
+
+    if (!extractedText || !pages || !words) {
+        return new Response(JSON.stringify({ error: "Missing extractedText, pages, or words" }), { status: 400 })
     }
 
     const encoder = new TextEncoder()
@@ -24,17 +26,13 @@ export async function POST(req: NextRequest) {
             }
 
             try {
-                // Extract text
-                const buffer = Buffer.from(await file.arrayBuffer())
-                const doc = await extractText(buffer)
-
                 // Step 0 — Load terms
                 send("step", { step: 0 })
                 const terms = await loadTerms()
 
                 // Step 1 — Match terms
                 send("step", { step: 1 })
-                const matches = matchTerms(doc, terms)
+                const matches = matchTerms(extractedText, pages, words, terms)
 
                 // Step 2 — Translate
                 send("step", { step: 2 })
@@ -46,11 +44,11 @@ export async function POST(req: NextRequest) {
                     if (match.translation_de) reference_de[match.matchedPhrase] = match.translation_de
                 }
 
-                const chunks = doc.text
+                const chunks = extractedText
                     .split(/(?<=[.!?])\s+(?=[A-Z])|(?=\d+\.\s+[A-Z])/)
-                    .map(s => s.trim())
-                    .filter(s => s.length > 10)
-                    .reduce((acc, chunk, i) => {
+                    .map((s: string) => s.trim())
+                    .filter((s: string) => s.length > 10)
+                    .reduce((acc: Record<string, string>, chunk: string, i: number) => {
                         acc[`p${i}`] = chunk
                         return acc
                     }, {} as Record<string, string>)
@@ -82,11 +80,11 @@ export async function POST(req: NextRequest) {
                 }))
 
                 send("done", {
-                    text: doc.text,
+                    text: extractedText,
                     translated_es,
                     translated_de,
-                    total: doc.total,
-                    pages: doc.pages,
+                    total: total || pages.length,
+                    pages,
                     matches,
                     paragraphMap,
                 })

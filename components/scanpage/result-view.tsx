@@ -24,7 +24,9 @@ import { Tabs, TabsList, TabsTrigger } from "../ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
 import { ChatHandler } from "./chat-handler"
 
-pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
+if (typeof window !== 'undefined') {
+    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
+}
 
 function getRisk(term: MatchedTerm, lang: "es" | "de"): RiskLevel {
     const flag = lang === "es" ? term.flag_es : term.flag_de
