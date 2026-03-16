@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils"
 import { SectionBox } from "../homepage/section"
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
+import { ChatHandler } from "./chat-handler"
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
 
@@ -255,31 +256,50 @@ function RightPanel({
     activeTermId,
     cardRefs,
     onCardClick,
+    rightView,
+    chatPrefill,
+    onCloseChat,
+    onAskInChat,
 }: {
     matches: MatchedTerm[]
     lang: "es" | "de"
     activeTermId: number | null
     cardRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>
     onCardClick: (term: MatchedTerm) => void
+    rightView: 'terms' | 'chat'
+    chatPrefill: string | null
+    onCloseChat: () => void
+    onAskInChat: (message: string) => void
 }) {
     return (
         <div className="w-90 h-full shrink-0 flex flex-col overflow-hidden border-l border-black/8 bg-gray-50">
-            <div className="p-4 bg-white border-b border-black/8 shrink-0 flex items-center text-gray-700 gap-2">
-                <LinkIcon size={24} /> <span>Extracted Terms</span>
-            </div>
-            <div className="flex-1 overflow-y-auto overscroll-contain p-4 flex flex-col gap-4 min-h-0">
-                {matches.map(term => (
-                    <TermCard
-                        key={term.id}
-                        term={term}
-                        lang={lang}
-                        isActive={activeTermId === term.id}
-                        cardRef={el => { cardRefs.current[term.id] = el }}
-                        onCardClick={() => onCardClick(term)}
-                        onAskInChat={(message) => { }}
-                    />
-                ))}
-            </div>
+            {rightView === "terms" && (
+                <>
+                    <div className="p-4 bg-white border-b border-black/8 shrink-0 flex items-center text-gray-700 gap-2">
+                        <LinkIcon size={24} /> <span>Extracted Terms</span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto overscroll-contain p-4 flex flex-col gap-4 min-h-0">
+                        {matches.map(term => (
+                            <TermCard
+                                key={term.id}
+                                term={term}
+                                lang={lang}
+                                isActive={activeTermId === term.id}
+                                cardRef={el => { cardRefs.current[term.id] = el }}
+                                onCardClick={() => onCardClick(term)}
+                                onAskInChat={onAskInChat}
+                            />
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {rightView === "chat" && (
+                <ChatHandler
+                    onClose={onCloseChat}
+                    prefill={chatPrefill}
+                />
+            )}
         </div>
     )
 }
@@ -287,6 +307,8 @@ function RightPanel({
 export function ResultView({ data, file }: ResultViewProps) {
     const [lang, setLang] = useState<"es" | "de">("es")
     const [viewMode, setViewMode] = useState<"original" | "translated">("original")
+    const [rightView, setRightView] = useState<'terms' | 'chat'>('terms')
+    const [chatPrefill, setChatPrefill] = useState<string | null>(null)
     const [activeTermId, setActiveTermId] = useState<number | null>(null)
     const [currentPage, setCurrentPage] = useState(1)
     const [pageWidth, setPageWidth] = useState<number>(0)
@@ -352,6 +374,11 @@ export function ResultView({ data, file }: ResultViewProps) {
     const fileUrl = useMemo(() => {
         return file ? URL.createObjectURL(file) : null
     }, [file])
+
+    function handleAskInChat(message: string) {
+        setChatPrefill(message)
+        setRightView('chat')
+    }
 
     return (
         <SectionBox className="flex flex-col h-[calc(100vh-64px)] p-2">
@@ -423,6 +450,10 @@ export function ResultView({ data, file }: ResultViewProps) {
                     activeTermId={activeTermId}
                     cardRefs={cardRefs}
                     onCardClick={handleCardClick}
+                    rightView={rightView}
+                    chatPrefill={chatPrefill}
+                    onCloseChat={() => setRightView('terms')}
+                    onAskInChat={handleAskInChat}
                 />
             </div>
         </SectionBox>
