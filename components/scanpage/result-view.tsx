@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useMemo } from "react"
 import Link from "next/link"
 import { Document, Page, pdfjs } from "react-pdf"
 import "react-pdf/dist/Page/AnnotationLayer.css"
@@ -11,12 +11,17 @@ import {
     ChevronRight,
     Globe,
     Link as LinkIcon,
+    FileText,
+    Languages,
+    MessageCircle,
 } from "lucide-react"
 import { BoundingBox, MatchedTerm, ResultViewProps, ScanResult } from "@/lib/types"
 import { RISK, RiskLevel } from "@/lib/constant"
 import { Button } from "../ui/button"
 import { cn } from "@/lib/utils"
 import { SectionBox } from "../homepage/section"
+import { Tabs, TabsList, TabsTrigger } from "../ui/tabs"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
 
@@ -30,9 +35,18 @@ function getRisk(term: MatchedTerm, lang: "es" | "de"): RiskLevel {
 function TopBar({
     redCount,
     amberCount,
+    language,
+    setLanguage,
+    viewMode,
+    setViewMode,
 }: {
     redCount: number
     amberCount: number
+    language: "es" | "de"
+    setLanguage: (lang: "es" | "de") => void
+    viewMode: "original" | "translated"
+    setViewMode: (mode: "original" | "translated") => void
+
 }) {
     return (
         <div className="flex items-center justify-between border-b border-black/5 shrink-0 p-4">
@@ -40,10 +54,34 @@ function TopBar({
                 <h1 className="text-2xl font-medium text-gray-950">Analysis Complete</h1>
                 <p className="text-sm text-gray-600">{redCount} high risk | {amberCount} caution</p>
             </div>
-            <Button variant="outline" className="shadow-none">
-                <Globe size={14} />
-                <span>Spain</span>
-            </Button>
+            <div className="flex items-center gap-3">
+                <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "original" | "translated")}>
+                    <TabsList>
+                        <TabsTrigger value="original" title="Original">
+                            <FileText size={24} />
+                        </TabsTrigger>
+                        <TabsTrigger value="translated" title="Translated">
+                            <Languages size={24} />
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="shadow-none">
+                            <Globe size={14} />
+                            <span>{language === 'es' ? 'Spanish' : 'German'}</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => setLanguage('es')}>
+                            Spanish
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setLanguage('de')}>
+                            German
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
         </div>
     )
 }
@@ -134,12 +172,14 @@ function TermCard({
     isActive,
     cardRef,
     onCardClick,
+    onAskInChat,
 }: {
     term: MatchedTerm
     lang: "es" | "de"
     isActive: boolean
     cardRef: (el: HTMLDivElement | null) => void
     onCardClick: () => void
+    onAskInChat: (message: string) => void
 }) {
     const risk = getRisk(term, lang)
     const r = RISK[risk]
@@ -175,18 +215,34 @@ function TermCard({
                             {term.explanation_en}
                         </p>
                     )}
-                    {term.source_url && (
-                        <Link
-                            href={term.source_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={e => e.stopPropagation()}
-                            className="inline-flex items-center gap-1 text-sm text-blue-500 hover:text-blue-700 hover:underline w-fit"
+
+                    <div className="flex items-center justify-between">
+                        {term.source_url && (
+                            <Link
+                                href={term.source_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={e => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 text-sm text-blue-500 hover:text-blue-700 hover:underline w-fit"
+                            >
+                                {term.source_name}
+                                <ExternalLink size={10} />
+                            </Link>
+                        )}
+
+                        <Button
+                            size="sm"
+                            onClick={e => {
+                                e.stopPropagation()
+                                onAskInChat(
+                                    `Explain "${term.matchedPhrase}" in simple terms. Does this concept exist in my country and should I be concerned about it?`
+                                )
+                            }}
                         >
-                            {term.source_name}
-                            <ExternalLink size={10} />
-                        </Link>
-                    )}
+                            <MessageCircle size={14} />
+                            Ask about this
+                        </Button>
+                    </div>
                 </div>
             )}
         </div>
@@ -220,6 +276,7 @@ function RightPanel({
                         isActive={activeTermId === term.id}
                         cardRef={el => { cardRefs.current[term.id] = el }}
                         onCardClick={() => onCardClick(term)}
+                        onAskInChat={(message) => { }}
                     />
                 ))}
             </div>
@@ -229,6 +286,7 @@ function RightPanel({
 
 export function ResultView({ data, file }: ResultViewProps) {
     const [lang, setLang] = useState<"es" | "de">("es")
+    const [viewMode, setViewMode] = useState<"original" | "translated">("original")
     const [activeTermId, setActiveTermId] = useState<number | null>(null)
     const [currentPage, setCurrentPage] = useState(1)
     const [pageWidth, setPageWidth] = useState<number>(0)
@@ -283,19 +341,30 @@ export function ResultView({ data, file }: ResultViewProps) {
         }
     }
 
-    const boxesOnPage = matches.flatMap(m =>
-        (m.boundingBoxes ?? [])
-            .filter(b => b.page === currentPage)
-            .map(b => ({ box: b, term: m }))
-    )
+    const boxesOnPage = useMemo(() => {
+        return matches.flatMap(m =>
+            (m.boundingBoxes ?? [])
+                .filter(b => b.page === currentPage)
+                .map(b => ({ box: b, term: m }))
+        )
+    }, [matches, currentPage])
 
-    const fileUrl = file ? URL.createObjectURL(file) : null
+    const fileUrl = useMemo(() => {
+        return file ? URL.createObjectURL(file) : null
+    }, [file])
 
     return (
         <SectionBox className="flex flex-col h-[calc(100vh-64px)] p-2">
-            <TopBar redCount={redCount} amberCount={amberCount} />
+            <TopBar
+                redCount={redCount}
+                amberCount={amberCount}
+                language={lang}
+                setLanguage={setLang}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+            />
 
-            <div className="flex flex-1 min-h-0 overflow-hidden">
+            <div className="flex flex-1 min-h-0 overflow-hidden rounded-[calc(var(--radius-2xl)-8px)]">
                 <div className={cn(
                     "flex-1 overflow-y-auto bg-gray-50 flex flex-col items-center py-6 gap-4",
                     "bg-[repeating-linear-gradient(315deg,var(--pattern-fg)_0,var(--pattern-fg)_1px,transparent_0,transparent_50%)] bg-size-[10px_10px] [--pattern-fg:var(--color-gray-200)]"
