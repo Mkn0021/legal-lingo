@@ -70,7 +70,6 @@ export const FileUpload = forwardRef(({
   return (
     <div className="w-full" {...getRootProps()}>
       <SectionBox
-        onClick={uploading || isLoading ? undefined : handleClick}
         className={cn("group/file block cursor-pointer", (uploading || isLoading) && "opacity-60 cursor-not-allowed")}
       >
         <input
@@ -153,6 +152,7 @@ export const FileUpload = forwardRef(({
             )}
             {!files.length && (
               <div
+                onClick={uploading || isLoading ? undefined : handleClick}
                 className={cn(
                   "relative z-40 mx-auto mt-4 flex h-32 md:h-48 w-full max-w-64 items-center justify-center rounded-md bg-white group-hover/file:shadow-2xl dark:bg-neutral-900",
                   "shadow-[0px_10px_50px_rgba(0,0,0,0.1)] translate-x-5 -translate-y-5 translate-z-5 border border-neutral-100",

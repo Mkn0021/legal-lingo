@@ -10,8 +10,9 @@ LegalLingo fixes that.
 
 ## What It Does
 
-Upload any legal document. Select your language. In seconds you get:
+**[Demo Video](https://youtu.be/Iwm-T0hFkF0)**
 
+Upload any legal document. Select your language. In seconds you get:
 - The full document translated with a legal glossary attached — not generic machine translation
 - Every legally tricky term highlighted directly on the PDF with an explanation of what it means *in your legal system*
 - A chat interface where you can ask questions about any clause in plain language
